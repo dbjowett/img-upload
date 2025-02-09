@@ -3,12 +3,14 @@ import { ImageCarousel } from '@/components/image-carousel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CloudUpload, Loader2, Plus, XIcon } from 'lucide-react';
 import Image from 'next/image';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 
 export default function Home() {
-  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const queryClient = useQueryClient();
+
   const [imageTitle, setImageTitle] = useState<string>('');
   const [image, setImage] = useState<File | null>(null);
   const [previewImg, setPreviewImg] = useState<string | null>(null);
@@ -26,38 +28,54 @@ export default function Home() {
     setImage(null);
   };
 
-  const startUpload = async () => {
-    if (!image) return;
-    setIsUploading(true);
+  interface UploadData {
+    image: File;
+    title: string;
+  }
+  const uploadImage = async ({ image, title }: UploadData) => {
     const formData = new FormData();
     formData.append('image', image);
-    formData.append('title', imageTitle.trim());
+    formData.append('title', title.trim());
 
-    try {
-      const res = await fetch('/api/images', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) throw new Error();
+    const res = await fetch('/api/images', {
+      method: 'POST',
+      body: formData,
+    });
 
-      // ** Success
+    if (!res.ok) {
+      throw new Error('Upload failed');
+    }
+
+    return res.json();
+  };
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: uploadImage,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['carouselImages'] });
       toast({
         title: 'Success!',
-        description: `Image with title: ${imageTitle} was successfully uploaded`,
+        description: `Image with title: ${variables.title} was successfully uploaded`,
       });
-
       clearImage();
-    } catch (error) {
-      // ** Error
+    },
+    onError: (error) => {
       toast({
         variant: 'destructive',
         title: 'Uh oh! Something went wrong.',
         description: 'There was a problem with your request.',
       });
       console.error(error);
-    } finally {
-      setIsUploading(false);
-    }
+    },
+  });
+
+  const startUpload = () => {
+    if (!image) return;
+
+    mutate({
+      image,
+      title: imageTitle.trim(),
+    });
   };
 
   // TODO: Change func name
@@ -82,7 +100,7 @@ export default function Home() {
       text: 'Uploading..',
       icon: <Loader2 className="animate-spin" />,
     },
-  }[isUploading ? 'pending' : 'default'];
+  }[isPending ? 'pending' : 'default'];
 
   return (
     <div className="flex flex-col justify-center min-h-svh mx-auto max-w-[400px] gap-4">
