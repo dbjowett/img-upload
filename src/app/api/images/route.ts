@@ -22,12 +22,12 @@ const getNextId = (): Promise<number> =>
     });
   });
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   // Check, else return all
-  const searchParams = req.nextUrl.searchParams;
-  const id = searchParams.get('id');
+  // const searchParams = req.nextUrl.searchParams;
+  // const id = searchParams.get('id');
 
-  const files = [];
+  // const files = [];
 
   return NextResponse.json({ Ping: 'pong' });
 }
