@@ -1,38 +1,66 @@
 import { FILE_PATH } from '@/lib/constants';
-import { MimeType } from '@/lib/types';
+import { ImageRes, Metadata, MimeType } from '@/lib/types';
 import { createFileName } from '@/lib/utils';
-import { existsSync, mkdirSync, readdir } from 'fs';
-import { writeFile } from 'fs/promises';
+import { existsSync, mkdirSync } from 'fs';
+import { readdir, readFile, writeFile } from 'fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
+import { join, default as path } from 'path';
 import sharp from 'sharp';
 
 const IMG_QUALITY = 50;
 
-interface Metadata {
-  id: number;
-  title: string;
-  createdAt: number;
-}
+const getNextId = async (): Promise<number> => {
+  const folders = await readdir(FILE_PATH);
+  const folderIds = folders
+    .map((id) => parseInt(id))
+    .filter((id) => !isNaN(id))
+    .sort();
 
-const getNextId = (): Promise<number> =>
-  new Promise((resolve) => {
-    readdir(FILE_PATH, (err, files) => {
-      resolve(files?.length + 1);
-    });
+  return folderIds.length ? folderIds[folderIds.length - 1] + 1 : 1;
+};
+
+const createDir = () => {
+  if (!existsSync(FILE_PATH)) mkdirSync(FILE_PATH, { recursive: true });
+};
+
+const getBase64Images = async () => {
+  const folderNameArr = await readdir(FILE_PATH); // ['1', '2' , '3', etc]
+
+  const getImages = folderNameArr.map(async (path) => {
+    const fileNameArr = await readdir(join(FILE_PATH, path));
+    const itemMap = {} as ImageRes;
+
+    // ** Return a promise which gets the files
+    await Promise.all(
+      fileNameArr.map(async (file) => {
+        const filePath = join(FILE_PATH, path, file);
+        if (file.includes('min-')) {
+          const currentFile = await readFile(filePath, { encoding: 'base64' });
+          itemMap.base64 = currentFile;
+        }
+        if (file.includes('.json')) {
+          const jsonFile = await readFile(filePath, { encoding: 'utf8' });
+          const { createdAt, id, title } = JSON.parse(jsonFile) as Metadata;
+          itemMap.createdAt = createdAt;
+          itemMap.title = title;
+          itemMap.id = id;
+        }
+      })
+    );
+    return itemMap;
   });
+  return Promise.all(getImages);
+};
 
 export async function GET() {
-  // Check, else return all
-  // const searchParams = req.nextUrl.searchParams;
-  // const id = searchParams.get('id');
-
-  // const files = [];
-
-  return NextResponse.json({ Ping: 'pong' });
+  createDir();
+  const base64Images = await getBase64Images();
+  console.log(base64Images);
+  return NextResponse.json({ images: base64Images });
 }
 
 export async function POST(req: NextRequest) {
+  createDir();
   const formData = await req.formData();
   const image = formData.get('image') as File;
   const title = formData.get('title') as string;
@@ -43,7 +71,6 @@ export async function POST(req: NextRequest) {
   }
 
   // ** Make dir if doesn't exist
-  if (!existsSync(FILE_PATH)) mkdirSync(FILE_PATH, { recursive: true });
   const nextId = await getNextId();
 
   const metadata: Metadata = {

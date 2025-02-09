@@ -1,4 +1,5 @@
 'use client';
+import { ImageCarousel } from '@/components/image-carousel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -135,6 +136,8 @@ export default function Home() {
           </Button>
         </>
       )}
+      <div className="text-2xl font-bold">Uploaded Images</div>
+      <ImageCarousel />
 
       <input
         ref={inputRef}
