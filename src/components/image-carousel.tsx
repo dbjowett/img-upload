@@ -9,8 +9,18 @@ import {
 import Image from 'next/image';
 
 import { ImageRes } from '@/lib/types';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 import { useQuery } from '@tanstack/react-query';
-import { ImageDown, Loader2 } from 'lucide-react';
+import { EllipsisVertical, FileArchive, ImageDown, Loader2, Trash } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
 
@@ -57,14 +67,29 @@ export const ImageCarousel = () => {
                   <CardFooter>
                     <div className="flex justify-between w-full items-center">
                       <p className="font-semibold text-sm">{date}</p>
-                      <div>
-                        <Button variant="ghost" size="icon">
-                          <ImageDown />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <ImageDown />
-                        </Button>
-                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <EllipsisVertical />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuLabel>Image Options</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem>
+                            <FileArchive />
+                            Download Compressed
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <ImageDown />
+                            Download Original
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Trash /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardFooter>
                 </Card>
