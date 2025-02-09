@@ -4,17 +4,21 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { CloudUpload, Loader2, Plus, XIcon } from 'lucide-react';
 import Image from 'next/image';
-import { ChangeEvent, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 
 export default function Home() {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [imageTitle, setImageTitle] = useState<string>('');
   const [image, setImage] = useState<File | null>(null);
+  const [previewImg, setPreviewImg] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const previewImage = image ? URL.createObjectURL(image) : null;
+  useEffect(() => {
+    if (!image) return;
+    setPreviewImg(URL.createObjectURL(image));
+  }, [image]);
 
   const clearImage = () => {
     setImageTitle('');
@@ -26,13 +30,15 @@ export default function Home() {
     setIsUploading(true);
     const formData = new FormData();
     formData.append('image', image);
-    formData.append('title', imageTitle);
+    formData.append('title', imageTitle.trim());
 
     try {
-      await fetch('/api/images', {
+      const res = await fetch('/api/images', {
         method: 'POST',
         body: formData,
       });
+      if (!res.ok) throw new Error();
+
       // ** Success
       toast({
         title: 'Success!',
@@ -60,11 +66,10 @@ export default function Home() {
   };
 
   const onImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    console.log('HEREERERER', e.target);
     if (!e.target.files || e.target.files.length < 1) return;
     const file = e.target.files[0];
     setImage(file);
-    setImageTitle(file.name);
+    e.target.value = '';
   };
 
   const buttonContent = {
@@ -79,18 +84,18 @@ export default function Home() {
   }[isUploading ? 'pending' : 'default'];
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-svh mx-auto max-w-[400px] gap-4">
+    <div className="flex flex-col justify-center min-h-svh mx-auto max-w-[400px] gap-4">
       <div className="text-2xl font-bold">Select an Image</div>
 
       {/* Image Preview */}
       <div
-        className="rounded-md overflow-hidden border w-full h-[400px] p-1 flex justify-center items-center relative"
+        className="rounded-2xl overflow-hidden border w-full h-[400px] p-1 flex justify-center items-center relative shadow"
         onClick={onSelectImage}
       >
-        {previewImage && image ? (
+        {previewImg && image ? (
           <Image
             alt={image?.name}
-            src={previewImage}
+            src={previewImg}
             width={400}
             height={400}
             className="h-[400px] object-contain"
@@ -117,20 +122,28 @@ export default function Home() {
         <>
           <div className="w-full">
             <Input
+              required
               placeholder="Please give your image a title"
               value={imageTitle}
               onChange={({ target }) => setImageTitle(target.value)}
             />
           </div>
 
-          <Button onClick={startUpload}>
+          <Button onClick={startUpload} disabled={!imageTitle}>
             {buttonContent.icon}
             {buttonContent.text}
           </Button>
         </>
       )}
 
-      <input ref={inputRef} type="file" accept="image/*" hidden onChange={onImageChange} />
+      <input
+        ref={inputRef}
+        type="file"
+        key="image-uploader"
+        accept="image/*"
+        className="hidden"
+        onChange={onImageChange}
+      />
     </div>
   );
 }

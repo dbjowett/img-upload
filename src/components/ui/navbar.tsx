@@ -1,7 +1,7 @@
 'use client';
 import { useToast } from '@/hooks/use-toast';
 import { openLinkInNewTab } from '@/lib/utils';
-import { Github, Linkedin, Mail, Moon, Sun } from 'lucide-react';
+import { Github, Image as IconImage, Linkedin, Mail, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from './button';
 
@@ -14,7 +14,6 @@ export const Navbar = () => {
       name: 'theme-toggle',
       icon: (
         <>
-          {/* Copied from docs */}
           <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </>
@@ -54,7 +53,10 @@ export const Navbar = () => {
     <nav className="w-full border-b">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between h-16">
-          <h1 className="text-xl font-semibold">Upload Files</h1>
+          <div className="flex gap-2 items-center">
+            <h1 className="text-xl font-semibold">Upload Files</h1>
+            <IconImage size={20} />
+          </div>
 
           <div className="flex items-center space-x-4">
             {BUTTONS.map((btn) => (
