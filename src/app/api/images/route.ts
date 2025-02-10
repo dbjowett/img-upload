@@ -1,34 +1,22 @@
 import { FILE_PATH } from '@/lib/constants';
-import { ImageRes, Metadata, MimeType } from '@/lib/types';
+import { createDir, getNextId } from '@/lib/server-utils';
+import { ImageAndMetadata, Metadata, MimeType } from '@/lib/types';
 import { createFileName } from '@/lib/utils';
-import { existsSync, mkdirSync } from 'fs';
+import { mkdirSync } from 'fs';
 import { readdir, readFile, writeFile } from 'fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
 import { join, default as path } from 'path';
 import sharp from 'sharp';
 
-const IMG_QUALITY = 50;
+const IMG_QUALITY = 20;
 
-const getNextId = async (): Promise<number> => {
-  const folders = await readdir(FILE_PATH);
-  const folderIds = folders
-    .map((id) => parseInt(id))
-    .filter((id) => !isNaN(id))
-    .sort();
-
-  return folderIds.length ? folderIds[folderIds.length - 1] + 1 : 1;
-};
-
-const createDir = () => {
-  if (!existsSync(FILE_PATH)) mkdirSync(FILE_PATH, { recursive: true });
-};
-
+// ** Fetches Metadata and Minified image
 const getBase64Images = async () => {
   const folderNameArr = await readdir(FILE_PATH); // ['1', '2' , '3', etc]
 
   const getImages = folderNameArr.map(async (path) => {
     const fileNameArr = await readdir(join(FILE_PATH, path));
-    const itemMap = {} as ImageRes;
+    const itemMap = {} as ImageAndMetadata;
 
     // ** Return a promise which gets the files
     await Promise.all(
@@ -39,13 +27,11 @@ const getBase64Images = async () => {
           itemMap.base64 = currentFile;
         } else if (file.includes('.json')) {
           const jsonFile = await readFile(filePath, { encoding: 'utf8' });
-          const { createdAt, id, title } = JSON.parse(jsonFile) as Metadata;
-          itemMap.createdAt = createdAt;
-          itemMap.title = title;
-          itemMap.id = id;
+          const jsonFields = JSON.parse(jsonFile) as Metadata; // metadata object
+          Object.assign(itemMap, jsonFields);
         } else {
           const currentFile = await readFile(filePath, { encoding: 'base64' });
-          itemMap.base64 = currentFile;
+          itemMap.fullBase64 = currentFile;
         }
       })
     );
@@ -63,8 +49,6 @@ export async function POST(req: NextRequest) {
   // ** Make dir if doesn't exist
   createDir();
 
-  console.log('HERE');
-
   const formData = await req.formData();
   const image = formData.get('image') as File;
   const title = formData.get('title') as string;
@@ -79,6 +63,8 @@ export async function POST(req: NextRequest) {
   const metadata: Metadata = {
     id: nextId,
     title: title,
+    originalTitle: image.name,
+    size: image.size,
     createdAt: Date.now(),
   };
 

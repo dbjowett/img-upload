@@ -1,13 +1,28 @@
 import { FILE_PATH } from '@/lib/constants';
-// import { rmSync } from 'fs';
-import { rm } from 'fs/promises';
+import { readdir, readFile, rm } from 'fs/promises';
 import { NextResponse } from 'next/server';
 import { join } from 'path';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const id = (await params).id; // image id
 
-  // Get full-sized image
+  try {
+    const folderNameArr = await readdir(FILE_PATH);
+
+    if (!folderNameArr.includes(id)) throw new Error('This file does not exist');
+    const fileNameArr = await readdir(join(FILE_PATH, id));
+    const filtered = fileNameArr.find(
+      (fileName) => !fileName.includes('.json') && !fileName.includes('min-')
+    );
+    if (!filtered) throw new Error('This file does not exist');
+
+    const filePath = join(FILE_PATH, id, filtered);
+    const currentFile = await readFile(filePath, { encoding: 'base64' });
+    if (!currentFile) throw new Error('This file does not exist');
+    return NextResponse.json(currentFile);
+  } catch (error) {
+    console.log('Error', error);
+  }
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {

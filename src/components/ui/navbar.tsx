@@ -51,14 +51,14 @@ export const Navbar = () => {
 
   return (
     <nav className="w-full border-b">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <div className="flex gap-2 items-center">
-            <h1 className="text-xl font-semibold">Upload Files</h1>
+          <div className="flex gap-2 items-center ml-2">
+            <h1 className="text-lg md:text-xl font-semibold">Upload Files</h1>
             <IconImage size={20} />
           </div>
-
-          <div className="flex items-center space-x-4">
+          {/* mt-8 md:mt-16 */}
+          <div className="flex items-center md:space-x-4">
             {BUTTONS.map((btn) => (
               <Button variant="ghost" size="icon" key={btn.name} onClick={btn.onClick}>
                 {btn.icon}

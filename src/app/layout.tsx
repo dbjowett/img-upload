@@ -24,7 +24,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <Navbar />
-            <main className="m-auto max-w-7xl">{children}</main>
+            <main>{children}</main>
             <Toaster />
           </ThemeProvider>
         </body>

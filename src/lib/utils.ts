@@ -20,7 +20,3 @@ export function mimeToExtension(mimeType: MimeType) {
 export function createFileName(title: string, mime: MimeType) {
   return `${title.replaceAll(' ', '_')}${mimeToExtension(mime)}`;
 }
-
-export function createFolderPath() {}
-
-export function getNextId() {}

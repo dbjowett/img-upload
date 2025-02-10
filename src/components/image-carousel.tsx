@@ -7,8 +7,9 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 
-import { ImageRes } from '@/lib/types';
+import { ImageAndMetadata } from '@/lib/types';
 
+import { TabType } from '@/app/page';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,10 +21,13 @@ import {
 
 import { toast } from '@/hooks/use-toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { EllipsisVertical, FileArchive, ImageDown, Loader2, Trash } from 'lucide-react';
+import { ArrowLeft, EllipsisVertical, ImageMinus, ImagePlus, Settings, Trash } from 'lucide-react';
+import Image from 'next/image';
+import { Dispatch, SetStateAction } from 'react';
+import { ClickableImage } from './clickable-image';
 import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
-import { ClickableImage } from './ui/clickable-image';
+import { Skeleton } from './ui/skeleton';
 
 const getCarouselImages = async () => {
   const res = await fetch('/api/images');
@@ -40,9 +44,13 @@ const deleteImage = async ({ id }: { id: string; title: string }) => {
   return await res.json();
 };
 
-export const ImageCarousel = () => {
+export const ImageCarousel = ({
+  setCurrentTab,
+}: {
+  setCurrentTab: Dispatch<SetStateAction<TabType>>;
+}) => {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery<ImageRes[]>({
+  const { data: images, isLoading } = useQuery<ImageAndMetadata[]>({
     queryKey: ['carouselImages'],
     queryFn: getCarouselImages,
   });
@@ -66,16 +74,73 @@ export const ImageCarousel = () => {
     },
   });
 
-  if (isLoading) return <Loader2 className="animate-spin" />;
-
-  const handleDelete = (image: ImageRes) => {
+  const handleDelete = (image: ImageAndMetadata) => {
     mutation.mutate({ id: image.id.toString(), title: image.title });
+  };
+
+  const handleDownload = ({
+    image,
+    size,
+  }: {
+    image: ImageAndMetadata;
+    size: 'compressed' | 'original';
+  }) => {
+    const imageData = size === 'compressed' ? image.base64 : image.fullBase64;
+    const a = document.createElement('a');
+    a.href = 'data:image/jpeg;base64,' + imageData;
+    a.download = image.originalTitle;
+    a.click();
   };
 
   return (
     <Carousel>
       <CarouselContent>
-        {data
+        {/* PLACEHOLDER */}
+        {!images?.length && !isLoading && (
+          <CarouselItem onClick={() => setCurrentTab('upload')}>
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  <Button variant="outline">
+                    <div className="flex items-center gap-1">
+                      <ArrowLeft />
+                      Upload an image to view
+                    </div>
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Image
+                  className="rounded-lg"
+                  src={'https://placehold.co/400x470?text=Image+will+appear+here&font=roboto'}
+                  height={470}
+                  width={400}
+                  alt="placeholder image"
+                />
+              </CardContent>
+            </Card>
+          </CarouselItem>
+        )}
+
+        {/* SKELETON LOADER */}
+
+        {!images?.length && isLoading && (
+          <CarouselItem onClick={() => setCurrentTab('upload')}>
+            <Card>
+              <div className="flex flex-col p-3 space-y-3 h-[470px] w-full">
+                <Skeleton className="h-4 w-[45%]" />
+                <Skeleton className="h-full w-full rounded-xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-[45%]" />
+                </div>
+              </div>
+            </Card>
+          </CarouselItem>
+        )}
+
+        {/* IMAGE CAROUSEL */}
+        {images
           ?.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
           .map((image) => {
             const date = new Date(image.createdAt).toLocaleString();
@@ -90,7 +155,7 @@ export const ImageCarousel = () => {
                   </CardContent>
                   <CardFooter>
                     <div className="flex justify-between w-full items-center">
-                      <p className="font-semibold text-sm">{date}</p>
+                      <p className="font-medium text-sm">{date}</p>
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -99,18 +164,28 @@ export const ImageCarousel = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuLabel>Image Options</DropdownMenuLabel>
+                          <DropdownMenuLabel>
+                            <div className="flex gap-1 items-center justify-between">
+                              Image Options
+                              <Settings size={14} />
+                            </div>
+                          </DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>
-                            <FileArchive />
-                            Download Compressed
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <ImageDown />
+                          <DropdownMenuItem
+                            onClick={() => handleDownload({ image, size: 'original' })}
+                          >
+                            <ImagePlus />
                             Download Original
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDownload({ image, size: 'compressed' })}
+                          >
+                            <ImageMinus />
+                            Download Compressed
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDelete(image)}>
-                            <Trash /> Delete
+                            <Trash className="text-red-400" />
+                            <div className="text-red-400">Delete</div>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

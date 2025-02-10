@@ -6,7 +6,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 # --------- DEPENDENCIES -------------
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat bash
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
@@ -33,7 +33,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=builder /app/public ./public
 
-# Copy necessary files from builder
+# Copy necessary files from builder (found somewhere)
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
