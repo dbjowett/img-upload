@@ -101,7 +101,7 @@ export const ImageCarousel = ({
             <Card>
               <CardHeader>
                 <CardTitle>
-                  <Button variant="outline">
+                  <Button className="w-full">
                     <div className="flex items-center gap-1">
                       <ArrowLeft />
                       Upload an image to view

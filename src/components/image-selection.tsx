@@ -126,7 +126,7 @@ export const ImageSelection = ({
         ) : (
           <div className="flex flex-col justify-center gap-2 h-full items-center">
             <Button>
-              <Plus /> Upload an Image
+              <Plus /> Select an Image
             </Button>
           </div>
         )}
