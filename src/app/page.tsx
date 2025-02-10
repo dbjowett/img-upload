@@ -51,11 +51,11 @@ export default function Home() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: uploadImage,
-    onSuccess: (_, variables) => {
+    onSuccess: (_, { title }) => {
       queryClient.invalidateQueries({ queryKey: ['carouselImages'] });
       toast({
         title: 'Success!',
-        description: `Image with title: ${variables.title} was successfully uploaded`,
+        description: `Image with title: ${title} was successfully uploaded`,
       });
       clearImage();
     },

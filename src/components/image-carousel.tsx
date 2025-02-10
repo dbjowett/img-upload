@@ -6,7 +6,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import Image from 'next/image';
 
 import { ImageRes } from '@/lib/types';
 
@@ -19,27 +18,59 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-import { useQuery } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { EllipsisVertical, FileArchive, ImageDown, Loader2, Trash } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { ClickableImage } from './ui/clickable-image';
 
 const getCarouselImages = async () => {
   const res = await fetch('/api/images');
   if (!res.ok) {
     throw new Error('Network response was not ok');
   }
+  // ** Fix this
   const { images } = await res.json();
   return images;
 };
 
+const deleteImage = async ({ id }: { id: string; title: string }) => {
+  const res = await fetch(`/api/images/${id}`, { method: 'DELETE' });
+  return await res.json();
+};
+
 export const ImageCarousel = () => {
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<ImageRes[]>({
     queryKey: ['carouselImages'],
     queryFn: getCarouselImages,
   });
 
+  const mutation = useMutation({
+    mutationFn: deleteImage,
+    onSuccess: (_, { title }) => {
+      toast({
+        title: 'Success!',
+        description: `Image with title: ${title} was successfully deleted`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['carouselImages'] });
+    },
+    onError: (error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Uh oh! Something went wrong.',
+        description: 'There was a problem with your request.',
+      });
+      console.error(error);
+    },
+  });
+
   if (isLoading) return <Loader2 className="animate-spin" />;
+
+  const handleDelete = (image: ImageRes) => {
+    mutation.mutate({ id: image.id.toString(), title: image.title });
+  };
 
   return (
     <Carousel>
@@ -53,16 +84,9 @@ export const ImageCarousel = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>{image.title}</CardTitle>
-                    {/* <CardDescription>Card Description</CardDescription> */}
                   </CardHeader>
                   <CardContent>
-                    <Image
-                      className="max-h-[400px] object-contain cursor-pointer"
-                      height={400}
-                      width={400}
-                      src={`data:image/jpeg;base64,${image.base64}`}
-                      alt={image.title}
-                    />
+                    <ClickableImage image={image} />
                   </CardContent>
                   <CardFooter>
                     <div className="flex justify-between w-full items-center">
@@ -85,7 +109,7 @@ export const ImageCarousel = () => {
                             <ImageDown />
                             Download Original
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(image)}>
                             <Trash /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>

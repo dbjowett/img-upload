@@ -37,13 +37,15 @@ const getBase64Images = async () => {
         if (file.includes('min-')) {
           const currentFile = await readFile(filePath, { encoding: 'base64' });
           itemMap.base64 = currentFile;
-        }
-        if (file.includes('.json')) {
+        } else if (file.includes('.json')) {
           const jsonFile = await readFile(filePath, { encoding: 'utf8' });
           const { createdAt, id, title } = JSON.parse(jsonFile) as Metadata;
           itemMap.createdAt = createdAt;
           itemMap.title = title;
           itemMap.id = id;
+        } else {
+          const currentFile = await readFile(filePath, { encoding: 'base64' });
+          itemMap.base64 = currentFile;
         }
       })
     );
@@ -54,23 +56,24 @@ const getBase64Images = async () => {
 
 export async function GET() {
   createDir();
-  const base64Images = await getBase64Images();
-  console.log(base64Images);
-  return NextResponse.json({ images: base64Images });
+  return NextResponse.json({ images: await getBase64Images() });
 }
 
 export async function POST(req: NextRequest) {
+  // ** Make dir if doesn't exist
   createDir();
+
+  console.log('HERE');
+
   const formData = await req.formData();
   const image = formData.get('image') as File;
   const title = formData.get('title') as string;
 
-  // ** Correct Mime type
+  // ** Correct Mime type && title
   if (!image.type.startsWith('image/') || !image || !title) {
     return NextResponse.json({ error: 'Please ensure all fields are valid' }, { status: 500 });
   }
 
-  // ** Make dir if doesn't exist
   const nextId = await getNextId();
 
   const metadata: Metadata = {
@@ -102,7 +105,7 @@ export async function POST(req: NextRequest) {
       JSON.stringify(metadata, null, 4)
     );
 
-    return Response.json({ Message: 'Successfully uploaded', status: 201 });
+    return NextResponse.json({ Message: 'Successfully uploaded', status: 201 });
   } catch {
     return NextResponse.json({ error: 'Upload failed!' }, { status: 500 });
   }
