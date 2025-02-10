@@ -70,7 +70,9 @@ export const ImageSelection = ({
         title: 'Success!',
         description: `Image with title: ${title} was successfully uploaded`,
       });
-      setCurrentTab('images');
+      setTimeout(() => {
+        setCurrentTab('images');
+      }, 1000);
       clearImage();
     },
     onError: (error) => {
@@ -160,7 +162,7 @@ export const ImageSelection = ({
         ref={inputRef}
         type="file"
         key="image-uploader"
-        accept="image/*"
+        accept="image/jpeg, image/jpg, image/png"
         className="hidden"
         onChange={onImageChange}
       />

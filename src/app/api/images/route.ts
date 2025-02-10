@@ -75,21 +75,28 @@ export async function POST(req: NextRequest) {
   const imageBuffer = Buffer.from(await image.arrayBuffer());
 
   try {
-    // ** Minify and write to disc
+    // ** Minify and write to disk
     sharp(imageBuffer)
       .png({ compressionLevel: IMG_QUALITY / 10 })
       .jpeg({ quality: IMG_QUALITY })
       .webp({ quality: IMG_QUALITY })
       .toFile(`${folderPath}/min-${fileName}`);
 
-    // ** Write original image to disc ** //
+    // ** Write original image to disk ** //
     await writeFile(path.join(process.cwd(), folderPath, fileName), imageBuffer);
 
-    // ** Write metadata to disc ** //
+    // ** Write metadata to disk ** //
     await writeFile(
       path.join(process.cwd(), folderPath, 'metadata.json'),
       JSON.stringify(metadata, null, 4)
     );
+
+    // ** Fix race condition with file being fetched before written to disk
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(true);
+      }, 1000);
+    });
 
     return NextResponse.json({ Message: 'Successfully uploaded', status: 201 });
   } catch {
